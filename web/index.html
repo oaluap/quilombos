@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Web GIS (Leaflet) — Quilombo</title>
+
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"
+      crossorigin=""
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="title">Web GIS (Leaflet)</div>
+        <div class="subtitle">3 mapas de fundo + camadas GeoJSON</div>
+      </header>
+
+      <main class="content">
+        <section id="map" class="map" aria-label="Mapa"></section>
+        <aside class="panel" aria-label="Informações">
+          <div class="panel__title">Camadas</div>
+          <div class="searchbox" aria-label="Busca por localidade">
+            <label class="searchbox__label" for="featureSearch">Buscar localidade/quilombo</label>
+            <div class="searchbox__row">
+              <input
+                id="featureSearch"
+                class="searchbox__input"
+                type="search"
+                placeholder="Ex.: Abacatal, 3 Irmãos, ..."
+                autocomplete="off"
+              />
+              <button id="featureSearchBtn" class="searchbox__btn" type="button">Buscar</button>
+            </div>
+            <div id="featureSearchResult" class="searchbox__result">Dica: você também pode buscar endereços no mapa.</div>
+          </div>
+          <div id="visibleCount" class="kpi" aria-label="Contador de registros visíveis">
+            Localidades visíveis no mapa: —
+          </div>
+          <div id="status" class="status">
+            Carregando…
+          </div>
+          <div class="hint">
+            Use o controle no canto superior direito do mapa para trocar o mapa de fundo (OSM / Satélite / Claro) e ligar/desligar as camadas.
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js" crossorigin=""></script>
+    <script src="./main.js"></script>
+  </body>
+</html>
