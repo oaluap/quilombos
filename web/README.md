@@ -1,6 +1,6 @@
 # Web GIS (Leaflet)
 
-Este diretório contém um Web GIS simples em Leaflet com **3 mapas de fundo** e suporte a camadas GeoJSON.
+Este diretório contém um Web GIS em Leaflet com **5 mapas de fundo** e camadas GeoJSON do Censo 2022 (IBGE).
 
 ## Como abrir
 
@@ -18,26 +18,40 @@ Depois abra no navegador:
 
 - `http://localhost:8000/web/`
 
-### Opção B) Node (se você já usa)
+### Opção B) Node (servidor incluído)
+
+Na raiz do projeto:
 
 ```bash
-npx serve .
+npm start
 ```
 
-Abra o link que ele mostrar e navegue até `/web/`.
+Depois abra:
+
+- Local: `http://localhost:8000/web/`
+- Online: https://oaluap.github.io/quilombos/
 
 ## Mapas de fundo incluídos
 
 - OpenStreetMap
 - Satélite (Esri World Imagery)
 - Claro (CARTO Positron)
+- Escuro (CARTO Dark Matter)
+- Topográfico (OpenTopoMap)
 
-## GeoJSON (opcional)
+## Camadas GeoJSON
 
-O app tenta carregar automaticamente:
+O app carrega automaticamente (na raiz do projeto):
 
-- `../localidadesquilombolas.geojson`
-- `../setoresquilombolas.geojson`
+| Arquivo | Feições | Descrição |
+|---------|---------|-----------|
+| `localidadesquilombolas.geojson` | 8 442 pontos | Localidades quilombolas (IBGE CD2022) |
+| `setoresquilombolas.geojson` | 5 591 polígonos | Setores censitários quilombolas |
 
-Se você mover os arquivos para dentro de `web/`, ajuste os caminhos no `main.js`.
+### Atualizar ou exportar do QGIS
+
+- Guia passo a passo: [`../scripts/export-qgis.md`](../scripts/export-qgis.md)
+- Baixar localidades oficiais (IBGE): `powershell -File ../scripts/fetch-localidades-ibge.ps1`
+
+Se mover os GeoJSON para dentro de `web/`, ajuste os caminhos em `main.js`.
 

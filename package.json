@@ -1,0 +1,8 @@
+{
+  "name": "quilombo-webgis",
+  "private": true,
+  "scripts": {
+    "start": "node web/server.js",
+    "fetch:localidades": "powershell -ExecutionPolicy Bypass -File scripts/fetch-localidades-ibge.ps1"
+  }
+}

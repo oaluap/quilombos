@@ -22,27 +22,69 @@
     <div class="app">
       <header class="topbar">
         <div class="title">Web GIS (Leaflet)</div>
-        <div class="subtitle">3 mapas de fundo + camadas GeoJSON</div>
+        <div class="subtitle">5 mapas de fundo + camadas GeoJSON (IBGE 2022)</div>
       </header>
 
       <main class="content">
         <section id="map" class="map" aria-label="Mapa"></section>
         <aside class="panel" aria-label="Informações">
           <div class="panel__title">Camadas</div>
-          <div class="searchbox" aria-label="Busca por localidade">
-            <label class="searchbox__label" for="featureSearch">Buscar localidade/quilombo</label>
-            <div class="searchbox__row">
-              <input
-                id="featureSearch"
-                class="searchbox__input"
-                type="search"
-                placeholder="Ex.: Abacatal, 3 Irmãos, ..."
-                autocomplete="off"
-              />
-              <button id="featureSearchBtn" class="searchbox__btn" type="button">Buscar</button>
+          <section class="searchbox" aria-label="Pesquisa por atributos">
+            <div class="searchbox__title">Pesquisar localidades</div>
+            <div class="searchbox__field">
+              <label class="searchbox__label" for="searchNomeQuilombo">Nome Quilombo</label>
+              <div class="searchbox__row">
+                <input
+                  id="searchNomeQuilombo"
+                  class="searchbox__input"
+                  type="search"
+                  placeholder="Ex.: Abacatal, 3 Irmãos..."
+                  autocomplete="off"
+                />
+                <button id="searchNomeQuilomboBtn" class="searchbox__btn" type="button">Buscar</button>
+              </div>
             </div>
-            <div id="featureSearchResult" class="searchbox__result">Dica: você também pode buscar endereços no mapa.</div>
-          </div>
+            <div class="searchbox__field">
+              <label class="searchbox__label" for="searchNmMunic">NM_MUNIC</label>
+              <div class="searchbox__row">
+                <input
+                  id="searchNmMunic"
+                  class="searchbox__input"
+                  type="search"
+                  placeholder="Ex.: Salvador, Eldorado..."
+                  autocomplete="off"
+                />
+                <button id="searchNmMunicBtn" class="searchbox__btn" type="button">Buscar</button>
+              </div>
+            </div>
+            <div id="searchResult" class="searchbox__result">Busca parcial (sem acento). Destaca todos os resultados no mapa.</div>
+            <button id="searchClearBtn" class="searchbox__btn searchbox__btn--secondary" type="button">Limpar destaque</button>
+          </section>
+          <section class="basemaps" aria-label="Planos de fundo">
+            <div class="basemaps__title">Plano de fundo</div>
+            <div class="basemaps__group" role="radiogroup" aria-label="Escolher mapa de fundo">
+              <label class="basemaps__option">
+                <input type="radio" name="basemap" value="osm" checked />
+                <span>OpenStreetMap</span>
+              </label>
+              <label class="basemaps__option">
+                <input type="radio" name="basemap" value="satellite" />
+                <span>Satélite (Esri)</span>
+              </label>
+              <label class="basemaps__option">
+                <input type="radio" name="basemap" value="light" />
+                <span>Claro (CARTO)</span>
+              </label>
+              <label class="basemaps__option">
+                <input type="radio" name="basemap" value="dark" />
+                <span>Escuro (CARTO)</span>
+              </label>
+              <label class="basemaps__option">
+                <input type="radio" name="basemap" value="topo" />
+                <span>Topográfico (OpenTopoMap)</span>
+              </label>
+            </div>
+          </section>
           <div id="visibleCount" class="kpi" aria-label="Contador de registros visíveis">
             Localidades visíveis no mapa: —
           </div>
@@ -50,7 +92,7 @@
             Carregando…
           </div>
           <div class="hint">
-            Use o controle no canto superior direito do mapa para trocar o mapa de fundo (OSM / Satélite / Claro) e ligar/desligar as camadas.
+            Escolha o plano de fundo acima. Ligue/desligue as camadas GeoJSON no controle do mapa (canto superior direito).
           </div>
         </aside>
       </main>

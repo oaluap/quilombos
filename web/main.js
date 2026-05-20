@@ -1,9 +1,19 @@
 /* global L */
 
+/** Caminhos dos GeoJSON: ../ no servidor local (/web/), ./ no GitHub Pages (raiz do site). */
+function geoJsonUrl(filename) {
+  const path = window.location.pathname.replace(/\\/g, "/");
+  const inWebFolder = /\/web\/?$/.test(path) || path.includes("/web/");
+  return inWebFolder ? `../${filename}` : `./${filename}`;
+}
+
 const statusEl = document.getElementById("status");
-const searchEl = document.getElementById("featureSearch");
-const searchBtnEl = document.getElementById("featureSearchBtn");
-const searchResultEl = document.getElementById("featureSearchResult");
+const searchNomeQuilomboEl = document.getElementById("searchNomeQuilombo");
+const searchNomeQuilomboBtnEl = document.getElementById("searchNomeQuilomboBtn");
+const searchNmMunicEl = document.getElementById("searchNmMunic");
+const searchNmMunicBtnEl = document.getElementById("searchNmMunicBtn");
+const searchResultEl = document.getElementById("searchResult");
+const searchClearBtnEl = document.getElementById("searchClearBtn");
 const visibleCountEl = document.getElementById("visibleCount");
 function setStatus(lines) {
   statusEl.textContent = Array.isArray(lines) ? lines.join("\n") : String(lines ?? "");
@@ -56,6 +66,20 @@ const cartoLight = L.tileLayer(
   },
 );
 
+const cartoDark = L.tileLayer(
+  "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+  {
+    maxZoom: 20,
+    attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a> &copy; OpenStreetMap',
+  },
+);
+
+const openTopoMap = L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
+  maxZoom: 17,
+  attribution:
+    'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, SRTM | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>',
+});
+
 // Default basemap
 osm.addTo(map);
 
@@ -63,7 +87,37 @@ const baseLayers = {
   "OpenStreetMap": osm,
   "Satélite (Esri)": esriSat,
   "Claro (CARTO)": cartoLight,
+  "Escuro (CARTO)": cartoDark,
+  "Topográfico (OpenTopoMap)": openTopoMap,
 };
+
+const basemapByKey = {
+  osm,
+  satellite: esriSat,
+  light: cartoLight,
+  dark: cartoDark,
+  topo: openTopoMap,
+};
+
+let activeBasemap = osm;
+
+function setBasemap(layer) {
+  if (!layer || activeBasemap === layer) return;
+  if (map.hasLayer(activeBasemap)) map.removeLayer(activeBasemap);
+  layer.addTo(map);
+  activeBasemap = layer;
+}
+
+function wireBasemapRadios() {
+  document.querySelectorAll('input[name="basemap"]').forEach((input) => {
+    input.addEventListener("change", () => {
+      const layer = basemapByKey[input.value];
+      if (layer) setBasemap(layer);
+    });
+  });
+}
+
+wireBasemapRadios();
 
 // --- Overlays (GeoJSON) ---
 const overlays = {};
@@ -71,6 +125,26 @@ const overlayLoading = [];
 let localidadesLayer = null;
 let setoresLayer = null;
 let localidadesIndex = [];
+const highlightGroup = L.layerGroup().addTo(map);
+let highlightedSourceLayers = [];
+
+const HIGHLIGHT_POINT = {
+  radius: 11,
+  color: "#ca8a04",
+  weight: 3,
+  fillColor: "#fde047",
+  fillOpacity: 0.95,
+  className: "leaflet-highlight-point",
+};
+
+const HIGHLIGHT_POLYGON = {
+  color: "#ca8a04",
+  weight: 4,
+  opacity: 1,
+  fillColor: "#fde047",
+  fillOpacity: 0.35,
+  className: "leaflet-highlight-polygon",
+};
 
 function styleSetores() {
   return {
@@ -170,43 +244,137 @@ function normalizeText(s) {
     .trim();
 }
 
-function wireFeatureSearch() {
-  function setResult(text) {
-    if (searchResultEl) searchResultEl.textContent = text;
-  }
+function setSearchResult(text) {
+  if (searchResultEl) searchResultEl.textContent = text;
+}
 
-  async function doSearch() {
-    const q = normalizeText(searchEl?.value);
-    if (!q) {
-      setResult("Digite um termo para buscar.");
-      return;
-    }
-    if (!localidadesLayer || localidadesIndex.length === 0) {
-      setResult("A camada de localidades ainda não carregou.");
-      return;
-    }
-
-    const hits = localidadesIndex.filter((x) => x.search.includes(q));
-    if (hits.length === 0) {
-      setResult("Nenhum resultado encontrado.");
-      return;
-    }
-
-    const first = hits[0];
-    map.setView(first.latlng, Math.max(map.getZoom(), 12), { animate: true });
-    first.layer.openPopup();
-    setResult(`Encontrados: ${hits.length}. Mostrando o 1º (zoom + popup).`);
-  }
-
-  if (searchBtnEl) searchBtnEl.addEventListener("click", doSearch);
-  if (searchEl) {
-    searchEl.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") doSearch();
-    });
+function ensureLocalidadesVisible() {
+  if (localidadesLayer && !map.hasLayer(localidadesLayer)) {
+    localidadesLayer.addTo(map);
   }
 }
 
-wireFeatureSearch();
+function clearHighlight() {
+  highlightGroup.clearLayers();
+  highlightedSourceLayers.forEach((layer) => {
+    if (layer.setStyle && layer._defaultStyle) {
+      layer.setStyle(layer._defaultStyle);
+    }
+    if (layer.setRadius && layer._defaultRadius != null) {
+      layer.setRadius(layer._defaultRadius);
+    }
+    if (layer._defaultPointStyle) {
+      layer.setStyle(layer._defaultPointStyle);
+    }
+  });
+  highlightedSourceLayers = [];
+}
+
+function highlightHits(hits) {
+  clearHighlight();
+  const bounds = [];
+
+  hits.forEach(({ layer, latlng }) => {
+    highlightedSourceLayers.push(layer);
+
+    if (latlng) {
+      L.circleMarker(latlng, HIGHLIGHT_POINT).addTo(highlightGroup);
+      bounds.push(latlng);
+      if (layer.setRadius) {
+        if (layer._defaultRadius == null) layer._defaultRadius = layer.getRadius();
+        layer.setRadius(9);
+        layer.bringToFront?.();
+      }
+      if (layer.setStyle) {
+        if (!layer._defaultPointStyle) {
+          layer._defaultPointStyle = {
+            color: layer.options?.color,
+            fillColor: layer.options?.fillColor,
+            weight: layer.options?.weight,
+            fillOpacity: layer.options?.fillOpacity,
+          };
+        }
+        layer.setStyle({
+          color: "#ca8a04",
+          fillColor: "#fde047",
+          weight: 3,
+          fillOpacity: 0.95,
+        });
+      }
+      return;
+    }
+
+    if (layer.getBounds) {
+      const b = layer.getBounds();
+      bounds.push(b);
+      if (layer.setStyle) {
+        if (!layer._defaultStyle) layer._defaultStyle = { ...styleSetores() };
+        layer.setStyle(HIGHLIGHT_POLYGON);
+        layer.bringToFront?.();
+      }
+    }
+  });
+
+  if (bounds.length === 0) return;
+
+  const latlngs = [];
+  bounds.forEach((b) => {
+    if (b.lat != null) latlngs.push(b);
+    else latlngs.push(b.getSouthWest(), b.getNorthEast());
+  });
+
+  if (latlngs.length === 1) {
+    map.setView(latlngs[0], Math.max(map.getZoom(), 12), { animate: true });
+    return;
+  }
+
+  map.fitBounds(L.latLngBounds(latlngs).pad(0.12), { animate: true, maxZoom: 14 });
+}
+
+function searchByField(field, inputEl, label) {
+  const q = normalizeText(inputEl?.value);
+  if (!q) {
+    setSearchResult(`Digite um valor para pesquisar em ${label}.`);
+    return;
+  }
+  if (!localidadesLayer || localidadesIndex.length === 0) {
+    setSearchResult("A camada de localidades ainda não carregou.");
+    return;
+  }
+
+  ensureLocalidadesVisible();
+
+  const hits = localidadesIndex.filter((x) => x[field].includes(q));
+  if (hits.length === 0) {
+    clearHighlight();
+    setSearchResult(`Nenhum registro encontrado em ${label}.`);
+    return;
+  }
+
+  highlightHits(hits);
+  hits[0].layer.openPopup();
+  setSearchResult(`${hits.length} registro(s) em ${label} — destacados no mapa.`);
+}
+
+function wireFieldSearch() {
+  const searchNome = () => searchByField("nomeQuilombo", searchNomeQuilomboEl, "Nome Quilombo");
+  const searchMunic = () => searchByField("nmMunic", searchNmMunicEl, "NM_MUNIC");
+
+  searchNomeQuilomboBtnEl?.addEventListener("click", searchNome);
+  searchNmMunicBtnEl?.addEventListener("click", searchMunic);
+  searchNomeQuilomboEl?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") searchNome();
+  });
+  searchNmMunicEl?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") searchMunic();
+  });
+  searchClearBtnEl?.addEventListener("click", () => {
+    clearHighlight();
+    setSearchResult("Destaque removido.");
+  });
+}
+
+wireFieldSearch();
 
 function setVisibleCount(n, enabled) {
   if (!visibleCountEl) return;
@@ -271,7 +439,7 @@ async function loadGeoJson({ label, url, asPoints = false, styleFn, kind }) {
   overlayLoading.push(label);
   setStatus([
     "Camadas disponíveis:",
-    "- Basemaps: OpenStreetMap, Satélite (Esri), Claro (CARTO)",
+    "- Basemaps: OSM, Satélite, Claro, Escuro, Topográfico",
     "",
     `Carregando: ${overlayLoading.join(", ")}`,
   ]);
@@ -301,21 +469,21 @@ async function loadGeoJson({ label, url, asPoints = false, styleFn, kind }) {
   return layer;
 }
 
-// Control
-const layerControl = L.control.layers(baseLayers, overlays, { collapsed: false }).addTo(map);
+// Controle Leaflet: apenas overlays (basemaps ficam no painel lateral)
+const layerControl = L.control.layers(null, overlays, { collapsed: false }).addTo(map);
 
 // Tenta carregar seus arquivos do diretório raiz do projeto (../)
 // Se você mover os GeoJSON para dentro de /web, ajuste os caminhos.
 Promise.allSettled([
   loadGeoJson({
     label: "Localidades quilombolas (pontos)",
-    url: "../localidadesquilombolas.geojson",
+    url: geoJsonUrl("localidadesquilombolas.geojson"),
     asPoints: true,
     kind: "localidades",
   }),
   loadGeoJson({
     label: "Setores quilombolas (polígonos)",
-    url: "../setoresquilombolas.geojson",
+    url: geoJsonUrl("setoresquilombolas.geojson"),
     styleFn: styleSetores,
     kind: "setores",
   }),
@@ -338,15 +506,16 @@ Promise.allSettled([
     localidadesIndex = [];
     localidadesLayer.eachLayer((l) => {
       const props = l?.feature?.properties || {};
-      const name = firstDefined(props, ["Nome Quilombo", "NM_CQ", "Localidade"]) ?? "";
-      const mun = firstDefined(props, ["NM_MUNIC", "NM_MUN"]) ?? "";
-      const uf = firstDefined(props, ["NM_UF", "UF"]) ?? "";
-      const cd = firstDefined(props, ["CD_LQ"]) ?? "";
-      const search = normalizeText([name, mun, uf, cd].filter(Boolean).join(" "));
+      const nomeQuilombo = normalizeText(
+        firstDefined(props, ["Nome Quilombo", "NM_CQ", "Localidade"]) ?? "",
+      );
+      const nmMunic = normalizeText(firstDefined(props, ["NM_MUNIC", "NM_MUN"]) ?? "");
       const latlng = l.getLatLng ? l.getLatLng() : null;
-      if (latlng) localidadesIndex.push({ layer: l, latlng, search });
+      if (latlng) localidadesIndex.push({ layer: l, latlng, nomeQuilombo, nmMunic });
     });
-    if (searchResultEl) searchResultEl.textContent = `Busca pronta: ${localidadesIndex.length} localidades indexadas.`;
+    if (searchResultEl) {
+      searchResultEl.textContent = `Pronto: ${localidadesIndex.length} localidades (Nome Quilombo / NM_MUNIC).`;
+    }
     refreshVisibleCount();
   }
 

@@ -52,6 +52,7 @@ body {
 .panel {
   height: calc(100vh - 72px);
   min-height: 520px;
+  overflow-y: auto;
   border-radius: 14px;
   background: rgba(15, 23, 42, 0.62);
   border: 1px solid rgba(148, 163, 184, 0.16);
@@ -80,6 +81,22 @@ body {
   border-radius: 12px;
   background: rgba(2, 6, 23, 0.55);
   border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.searchbox__title {
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: rgba(226, 232, 240, 0.92);
+}
+
+.searchbox__field + .searchbox__field {
+  margin-top: 10px;
+}
+
+.searchbox__btn--secondary {
+  width: 100%;
+  margin-top: 8px;
 }
 
 .searchbox__label {
@@ -127,6 +144,40 @@ body {
   font-size: 12px;
   line-height: 1.35;
   color: rgba(226, 232, 240, 0.75);
+}
+
+.basemaps {
+  margin-bottom: 10px;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(2, 6, 23, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.basemaps__title {
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: rgba(226, 232, 240, 0.92);
+}
+
+.basemaps__group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.basemaps__option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  color: rgba(226, 232, 240, 0.88);
+}
+
+.basemaps__option input {
+  accent-color: #60a5fa;
 }
 
 .kpi {
@@ -206,6 +257,15 @@ body {
 .popup__title {
   font-weight: 700;
   margin-bottom: 6px;
+}
+
+/* Destaque da pesquisa */
+.leaflet-highlight-point {
+  filter: drop-shadow(0 0 6px rgba(250, 204, 21, 0.95));
+}
+
+.leaflet-highlight-polygon {
+  filter: drop-shadow(0 0 4px rgba(250, 204, 21, 0.85));
 }
 
 @media (max-width: 960px) {
