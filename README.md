@@ -26,4 +26,8 @@ Abra: http://localhost:8000/web/
 
 ## Repositório
 
-https://github.com/oaluap/quilombos
+Único repositório e deploy:
+
+- Código: https://github.com/oaluap/quilombos
+- Site: https://oaluap.github.io/quilombos/
+- Remote Git: `origin` → `https://github.com/oaluap/quilombos.git`

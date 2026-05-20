@@ -8,7 +8,7 @@ Este diretório contém um Web GIS em Leaflet com **5 mapas de fundo** e camadas
 
 ### Opção A) Python (recomendado)
 
-Na raiz do projeto (`C:\Trab\Cursor\quilombo`):
+Na raiz do repositório [quilombos](https://github.com/oaluap/quilombos):
 
 ```bash
 python -m http.server 8000

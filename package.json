@@ -1,6 +1,11 @@
 {
-  "name": "quilombo-webgis",
+  "name": "quilombos-webgis",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/oaluap/quilombos.git"
+  },
+  "homepage": "https://oaluap.github.io/quilombos/",
   "scripts": {
     "start": "node web/server.js",
     "fetch:localidades": "powershell -ExecutionPolicy Bypass -File scripts/fetch-localidades-ibge.ps1"

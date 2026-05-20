@@ -12,7 +12,7 @@ Use este guia para gerar ou atualizar os arquivos na raiz do projeto:
 3. Formato: **GeoJSON**
 4. Nome do arquivo: `localidadesquilombolas.geojson`
 5. CRS de destino: **EPSG:4674** (SIRGAS 2000) ou **EPSG:4326** (WGS 84).
-6. Salve na pasta raiz do repositório (`quilombo/`).
+6. Salve na pasta raiz do repositório [quilombos](https://github.com/oaluap/quilombos).
 
 Campos usados pelo Web GIS (mantenha nomes compatíveis):
 
