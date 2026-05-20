@@ -6,7 +6,12 @@ Mapa interativo das **localidades** e **setores** quilombolas (IBGE, Censo 2022)
 
 **https://oaluap.github.io/quilombos/**
 
-> Na primeira publicação, ative em *Settings → Pages → Build and deployment → Source: **GitHub Actions***.
+### Se a URL retornar 404
+
+1. Abra **https://github.com/oaluap/quilombos/settings/pages**
+2. Em **Build and deployment → Source**, escolha **GitHub Actions**
+3. Vá em **Actions** → workflow **Deploy GitHub Pages** → **Run workflow** (ou faça um novo push)
+4. Aguarde o job ficar verde; a URL acima deve responder em 1–2 minutos
 
 ## Desenvolvimento local
 

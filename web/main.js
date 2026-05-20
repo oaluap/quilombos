@@ -1,10 +1,19 @@
 /* global L */
 
-/** Caminhos dos GeoJSON: ../ no servidor local (/web/), ./ no GitHub Pages (raiz do site). */
+/** Base do site: /quilombos/ no GitHub Pages, ../ no servidor local (/web/). */
+function getSiteBase() {
+  if (location.hostname.endsWith("github.io")) {
+    const repo = location.pathname.split("/").filter(Boolean)[0];
+    return repo ? `/${repo}/` : "/";
+  }
+  const path = location.pathname.replace(/\\/g, "/");
+  if (/\/web\/?$/.test(path) || path.includes("/web/")) return "../";
+  return "./";
+}
+
 function geoJsonUrl(filename) {
-  const path = window.location.pathname.replace(/\\/g, "/");
-  const inWebFolder = /\/web\/?$/.test(path) || path.includes("/web/");
-  return inWebFolder ? `../${filename}` : `./${filename}`;
+  const base = getSiteBase();
+  return `${base}${filename}`;
 }
 
 const statusEl = document.getElementById("status");

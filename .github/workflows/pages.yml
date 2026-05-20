@@ -9,17 +9,15 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  administration: write
 
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,15 +27,25 @@ jobs:
           mkdir -p _site
           cp -r web/* _site/
           cp localidadesquilombolas.geojson setoresquilombolas.geojson _site/
+          touch _site/.nojekyll
 
-      - name: Configurar Pages
+      - name: Configurar e habilitar Pages
         uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - name: Enviar artefato
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: _site
 
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Publicar no GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
