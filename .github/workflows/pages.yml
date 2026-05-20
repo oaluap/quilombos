@@ -6,17 +6,14 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
-  administration: write
+  contents: write
 
 concurrency:
   group: pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -24,28 +21,15 @@ jobs:
 
       - name: Montar site estático
         run: |
-          mkdir -p _site
-          cp -r web/* _site/
-          cp localidadesquilombolas.geojson setoresquilombolas.geojson _site/
-          touch _site/.nojekyll
+          mkdir -p public
+          cp -r web/* public/
+          cp localidadesquilombolas.geojson setoresquilombolas.geojson public/
+          touch public/.nojekyll
 
-      - name: Configurar e habilitar Pages
-        uses: actions/configure-pages@v5
+      - name: Publicar branch gh-pages
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          enablement: true
-
-      - name: Enviar artefato
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: _site
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Publicar no GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
+          publish_branch: gh-pages
+          force_orphan: true

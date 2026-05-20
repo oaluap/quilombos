@@ -6,12 +6,13 @@ Mapa interativo das **localidades** e **setores** quilombolas (IBGE, Censo 2022)
 
 **https://oaluap.github.io/quilombos/**
 
-### Se a URL retornar 404
+### Se a URL retornar 404 (ativar Pages uma vez)
 
-1. Abra **https://github.com/oaluap/quilombos/settings/pages**
-2. Em **Build and deployment → Source**, escolha **GitHub Actions**
-3. Vá em **Actions** → workflow **Deploy GitHub Pages** → **Run workflow** (ou faça um novo push)
-4. Aguarde o job ficar verde; a URL acima deve responder em 1–2 minutos
+1. Confira se o workflow **Deploy GitHub Pages** terminou com sucesso em [Actions](https://github.com/oaluap/quilombos/actions)
+2. Abra **https://github.com/oaluap/quilombos/settings/pages**
+3. Em **Build and deployment → Source**, escolha **Deploy from a branch**
+4. Branch: **gh-pages** — Folder: **/ (root)** — clique **Save**
+5. Aguarde 1–2 minutos e acesse **https://oaluap.github.io/quilombos/**
 
 ## Desenvolvimento local
 
@@ -36,3 +37,4 @@ Abra: http://localhost:8000/web/
 - Código: https://github.com/oaluap/quilombos
 - Site: https://oaluap.github.io/quilombos/
 - Remote Git: `origin` → `https://github.com/oaluap/quilombos.git`
+- Publicação: branch `gh-pages` (gerada pelo workflow)
