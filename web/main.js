@@ -24,6 +24,11 @@ const searchNmMunicBtnEl = document.getElementById("searchNmMunicBtn");
 const searchResultEl = document.getElementById("searchResult");
 const searchClearBtnEl = document.getElementById("searchClearBtn");
 const visibleCountEl = document.getElementById("visibleCount");
+const statsZonaEl = document.getElementById("statsZona");
+const statsMunicEl = document.getElementById("statsMunic");
+const statsEleitoresEl = document.getElementById("statsEleitores");
+const statsNoteEl = document.getElementById("statsNote");
+let statsPinnedBySearch = false;
 function setStatus(lines) {
   statusEl.textContent = Array.isArray(lines) ? lines.join("\n") : String(lines ?? "");
 }
@@ -183,6 +188,101 @@ function firstDefined(props, keys) {
   return undefined;
 }
 
+function parseEleitoresAptos(props) {
+  const raw = firstDefined(props, ["EleitoresAptos", "ELEITORESAPTOS", "eleitores_aptos"]);
+  if (raw === undefined) return 0;
+  const n = Number(String(raw).replace(/\./g, "").replace(",", "."));
+  return Number.isFinite(n) ? n : 0;
+}
+
+function getZona(props) {
+  return firstDefined(props, ["Zona", "ZONA", "NM_ZONA", "CD_ZONA", "NR_ZONA"]);
+}
+
+function getMunic(props) {
+  return firstDefined(props, ["NM_MUNIC", "NM_MUN", "Municipio", "MUNICIPIO"]);
+}
+
+function formatPtNumber(n) {
+  return new Intl.NumberFormat("pt-BR").format(n);
+}
+
+function formatUniqueValues(values) {
+  const list = [...values].filter(Boolean).map(String);
+  if (list.length === 0) return "—";
+  if (list.length === 1) return list[0];
+  if (list.length <= 3) return list.join(", ");
+  return `${list.slice(0, 2).join(", ")} (+${list.length - 2})`;
+}
+
+function aggregateFromLayers(layers) {
+  const zonas = new Set();
+  const muns = new Set();
+  let somaEleitores = 0;
+  let hasEleitoresField = false;
+
+  layers.forEach((l) => {
+    const props = l?.feature?.properties || {};
+    const zona = getZona(props);
+    const munic = getMunic(props);
+    if (zona) zonas.add(zona);
+    if (munic) muns.add(munic);
+    if (props.EleitoresAptos !== undefined || props.ELEITORESAPTOS !== undefined || props.eleitores_aptos !== undefined) {
+      hasEleitoresField = true;
+    }
+    somaEleitores += parseEleitoresAptos(props);
+  });
+
+  return {
+    zona: formatUniqueValues(zonas),
+    municipio: formatUniqueValues(muns),
+    somaEleitores,
+    hasEleitoresField,
+    count: layers.length,
+  };
+}
+
+function updateZonaMunicBox({ zona, municipio, somaEleitores, hasEleitoresField, count, note }) {
+  if (statsZonaEl) statsZonaEl.textContent = zona ?? "—";
+  if (statsMunicEl) statsMunicEl.textContent = municipio ?? "—";
+  if (statsEleitoresEl) {
+    if (!hasEleitoresField && count > 0) {
+      statsEleitoresEl.textContent = "campo ausente";
+    } else {
+      statsEleitoresEl.textContent = formatPtNumber(somaEleitores);
+    }
+  }
+  if (statsNoteEl && note) statsNoteEl.textContent = note;
+}
+
+function refreshZonaMunicFromVisible() {
+  if (statsPinnedBySearch) return;
+  if (!localidadesLayer || !map.hasLayer(localidadesLayer)) {
+    updateZonaMunicBox({
+      zona: "—",
+      municipio: "—",
+      somaEleitores: 0,
+      hasEleitoresField: false,
+      count: 0,
+      note: "Camada de localidades desligada.",
+    });
+    return;
+  }
+
+  const b = map.getBounds();
+  const visibleLayers = [];
+  localidadesLayer.eachLayer((l) => {
+    const latlng = l.getLatLng ? l.getLatLng() : null;
+    if (latlng && b.contains(latlng)) visibleLayers.push(l);
+  });
+
+  const agg = aggregateFromLayers(visibleLayers);
+  updateZonaMunicBox({
+    ...agg,
+    note: `${agg.count} localidade(s) visível(is) no mapa.`,
+  });
+}
+
 function buildPopup(feature, kind) {
   const props = feature?.properties || {};
 
@@ -193,8 +293,14 @@ function buildPopup(feature, kind) {
     const cd = firstDefined(props, ["CD_LQ"]);
 
     const rows = [];
+    const zona = getZona(props);
+    const eleitores = parseEleitoresAptos(props);
+    if (zona) rows.push(["Zona", zona]);
     if (mun || uf) rows.push(["Município/UF", [mun, uf].filter(Boolean).join(" — ")]);
     if (cd) rows.push(["Código", cd]);
+    if (props.EleitoresAptos !== undefined || props.ELEITORESAPTOS !== undefined || props.eleitores_aptos !== undefined) {
+      rows.push(["Eleitores aptos", formatPtNumber(eleitores)]);
+    }
     const fallback = niceProps(props, ["NM_UF", "NM_MUNIC", "CD_MUNIC", "CD_LQ", "NM_CQ", "Nome Quilombo", "Localidade"]);
     return `
       <div class="popup">
@@ -356,12 +462,20 @@ function searchByField(field, inputEl, label) {
   const hits = localidadesIndex.filter((x) => x[field].includes(q));
   if (hits.length === 0) {
     clearHighlight();
+    statsPinnedBySearch = false;
+    refreshZonaMunicFromVisible();
     setSearchResult(`Nenhum registro encontrado em ${label}.`);
     return;
   }
 
   highlightHits(hits);
   hits[0].layer.openPopup();
+  const agg = aggregateFromLayers(hits.map((h) => h.layer));
+  statsPinnedBySearch = true;
+  updateZonaMunicBox({
+    ...agg,
+    note: `${hits.length} registro(s) em ${label} — soma de EleitoresAptos.`,
+  });
   setSearchResult(`${hits.length} registro(s) em ${label} — destacados no mapa.`);
 }
 
@@ -379,6 +493,8 @@ function wireFieldSearch() {
   });
   searchClearBtnEl?.addEventListener("click", () => {
     clearHighlight();
+    statsPinnedBySearch = false;
+    refreshZonaMunicFromVisible();
     setSearchResult("Destaque removido.");
   });
 }
@@ -411,6 +527,7 @@ function countVisibleLocalidades() {
 function refreshVisibleCount() {
   const { enabled, count } = countVisibleLocalidades();
   setVisibleCount(count, enabled);
+  refreshZonaMunicFromVisible();
 }
 
 map.on("moveend zoomend", refreshVisibleCount);
@@ -526,6 +643,7 @@ Promise.allSettled([
       searchResultEl.textContent = `Pronto: ${localidadesIndex.length} localidades (Nome Quilombo / NM_MUNIC).`;
     }
     refreshVisibleCount();
+    refreshZonaMunicFromVisible();
   }
 
   if (overlays["Setores quilombolas (polígonos)"]) {
