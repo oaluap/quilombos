@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Web GIS (Leaflet) — Quilombos</title>
+    <script>
+      (function () {
+        var base = "./";
+        if (location.hostname.endsWith("github.io")) {
+          var seg = location.pathname.split("/").filter(Boolean)[0];
+          if (seg) base = "/" + seg + "/";
+        }
+        var el = document.createElement("base");
+        el.href = base;
+        document.head.appendChild(el);
+      })();
+    </script>
+
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"
+      crossorigin=""
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="title">Web GIS (Leaflet)</div>
+        <div class="subtitle">5 mapas de fundo + camadas GeoJSON (IBGE 2022)</div>
+      </header>
+
+      <main class="content">
+        <section id="map" class="map" aria-label="Mapa"></section>
+        <aside class="panel" aria-label="Informações">
+          <div class="panel__title">Camadas</div>
+          <section class="searchbox" aria-label="Pesquisa por atributos">
+            <div class="searchbox__title">Pesquisar localidades</div>
+            <div class="searchbox__field">
+              <label class="searchbox__label" for="searchNomeQuilombo">Nome Quilombo</label>
+              <div class="searchbox__row">
+                <input
+                  id="searchNomeQuilombo"
+                  class="searchbox__input"
+                  type="search"
+                  placeholder="Ex.: Abacatal, 3 Irmãos..."
+                  autocomplete="off"
+                />
+                <button id="searchNomeQuilomboBtn" class="searchbox__btn" type="button">Buscar</button>
+              </div>
+            </div>
+            <div class="searchbox__field">
+              <label class="searchbox__label" for="searchNmMunic">NM_MUNIC</label>
+              <div class="searchbox__row">
+                <input
+                  id="searchNmMunic"
+                  class="searchbox__input"
+                  type="search"
+                  placeholder="Ex.: Salvador, Eldorado..."
+                  autocomplete="off"
+                />
+                <button id="searchNmMunicBtn" class="searchbox__btn" type="button">Buscar</button>
+              </div>
+            </div>
+            <div id="searchResult" class="searchbox__result">Busca parcial (sem acento). Destaca todos os resultados no mapa.</div>
+            <button id="searchClearBtn" class="searchbox__btn searchbox__btn--secondary" type="button">Limpar destaque</button>
+          </section>
+          <section class="basemaps" aria-label="Planos de fundo">
+            <div class="basemaps__title">Plano de fundo</div>
+            <div class="basemaps__group" role="radiogroup" aria-label="Escolher mapa de fundo">
+              <label class="basemaps__option">
+                <input type="radio" name="basemap" value="osm" checked />
+                <span>OpenStreetMap</span>
+              </label>
+              <label class="basemaps__option">
+                <input type="radio" name="basemap" value="satellite" />
+                <span>Satélite (Esri)</span>
+              </label>
+              <label class="basemaps__option">
+                <input type="radio" name="basemap" value="light" />
+                <span>Claro (CARTO)</span>
+              </label>
+              <label class="basemaps__option">
+                <input type="radio" name="basemap" value="dark" />
+                <span>Escuro (CARTO)</span>
+              </label>
+              <label class="basemaps__option">
+                <input type="radio" name="basemap" value="topo" />
+                <span>Topográfico (OpenTopoMap)</span>
+              </label>
+            </div>
+          </section>
+          <section id="zonaMunicBox" class="stats-box" aria-label="Zona e Município">
+            <div class="stats-box__title">Zona e Município</div>
+            <div class="stats-box__row"><span class="stats-box__label">Zona</span><span id="statsZona" class="stats-box__value">—</span></div>
+            <div class="stats-box__row"><span class="stats-box__label">Município</span><span id="statsMunic" class="stats-box__value">—</span></div>
+            <div class="stats-box__row stats-box__row--highlight">
+              <span class="stats-box__label">Eleitores aptos (soma)</span>
+              <span id="statsEleitores" class="stats-box__value">—</span>
+            </div>
+            <div id="statsNote" class="stats-box__note">Atualiza com a busca ou com o recorte visível do mapa.</div>
+          </section>
+          <div id="visibleCount" class="kpi" aria-label="Contador de registros visíveis">
+            Localidades visíveis no mapa: —
+          </div>
+          <div id="status" class="status">
+            Carregando…
+          </div>
+          <div class="hint">
+            Escolha o plano de fundo acima. Ligue/desligue as camadas GeoJSON no controle do mapa (canto superior direito).
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js" crossorigin=""></script>
+    <script src="./main.js"></script>
+  </body>
+</html>
