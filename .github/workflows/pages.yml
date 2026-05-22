@@ -23,7 +23,8 @@ jobs:
         run: |
           mkdir -p public
           cp -r web/* public/
-          cp localidadesquilombolas.geojson setoresquilombolas.geojson public/
+          cp localidadesquilombolas.geojson setoresquilombolas.geojson \
+             AglomeradosPretos.geojson Dermacacao_Incra.geojson public/
           touch public/.nojekyll
 
       - name: Publicar branch gh-pages

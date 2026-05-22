@@ -47,6 +47,10 @@ O app carrega automaticamente (na raiz do projeto):
 |---------|---------|-----------|
 | `localidadesquilombolas.geojson` | 8 442 pontos | Localidades quilombolas (IBGE CD2022) |
 | `setoresquilombolas.geojson` | 5 591 polígonos | Setores censitários quilombolas |
+| `AglomeradosPretos.geojson` | 2 032 polígonos | Aglomerados pretos |
+| `Dermacacao_Incra.geojson` | 429 polígonos | Demarcação INCRA (territórios quilombolas) |
+
+As camadas **Aglomerados pretos** e **Demarcação INCRA** aparecem no controle do mapa desligadas por padrão (arquivos grandes).
 
 ### Atualizar ou exportar do QGIS
 

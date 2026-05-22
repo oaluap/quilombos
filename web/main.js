@@ -170,6 +170,26 @@ function styleSetores() {
   };
 }
 
+function styleAglomeradosPretos() {
+  return {
+    color: "#7c3aed",
+    weight: 2,
+    opacity: 0.75,
+    fillColor: "#a78bfa",
+    fillOpacity: 0.18,
+  };
+}
+
+function styleDemarcacaoIncra() {
+  return {
+    color: "#15803d",
+    weight: 2,
+    opacity: 0.8,
+    fillColor: "#4ade80",
+    fillOpacity: 0.15,
+  };
+}
+
 function pointToCircle(_, latlng) {
   return L.circleMarker(latlng, {
     radius: 4,
@@ -324,6 +344,51 @@ function buildPopup(feature, kind) {
     return `
       <div class="popup">
         <div class="popup__title">Setor ${escapeHtml(String(title))}</div>
+        ${rows.map(([k, v]) => `<div><b>${escapeHtml(k)}</b>: ${escapeHtml(String(v))}</div>`).join("")}
+        ${fallback}
+      </div>
+    `;
+  }
+
+  if (kind === "aglomerados") {
+    const title = firstDefined(props, ["NM_MUN", "NM_MUNIC", "fid"]) ?? "Aglomerado";
+    const uf = firstDefined(props, ["NM_UF", "UF"]);
+    const rows = [];
+    if (uf) rows.push(["UF", uf]);
+    const fallback = niceProps(props, ["fid", "NM_UF", "NM_MUN"]);
+    return `
+      <div class="popup">
+        <div class="popup__title">Aglomerado — ${escapeHtml(String(title))}</div>
+        ${rows.map(([k, v]) => `<div><b>${escapeHtml(k)}</b>: ${escapeHtml(String(v))}</div>`).join("")}
+        ${fallback}
+      </div>
+    `;
+  }
+
+  if (kind === "incra") {
+    const title = firstDefined(props, ["nm_comunid", "NM_COMUNID"]) ?? "Demarcação INCRA";
+    const mun = firstDefined(props, ["nm_municip", "NM_MUNIC", "NM_MUN"]);
+    const uf = firstDefined(props, ["cd_uf", "NM_UF", "UF"]);
+    const fase = firstDefined(props, ["fase", "FASE"]);
+    const area = firstDefined(props, ["nr_area_ha", "area_calc_"]);
+    const resp = firstDefined(props, ["responsave", "RESPONSAVE"]);
+
+    const rows = [];
+    if (mun || uf) rows.push(["Município/UF", [mun, uf].filter(Boolean).join(" — ")]);
+    if (fase) rows.push(["Fase", fase]);
+    if (area) rows.push(["Área (ha)", area]);
+    if (resp) rows.push(["Responsável", resp]);
+    const fallback = niceProps(props, [
+      "nm_comunid",
+      "nr_process",
+      "nr_familia",
+      "st_titulad",
+      "esfera",
+      "cd_sr",
+    ]);
+    return `
+      <div class="popup">
+        <div class="popup__title">${escapeHtml(String(title))}</div>
         ${rows.map(([k, v]) => `<div><b>${escapeHtml(k)}</b>: ${escapeHtml(String(v))}</div>`).join("")}
         ${fallback}
       </div>
@@ -552,6 +617,14 @@ function addLegend() {
         <span class="map-legend__swatch" style="background:rgba(96,165,250,.22);border-color:rgba(37,99,235,.7)"></span>
         <span>Setores (polígonos)</span>
       </div>
+      <div class="map-legend__item">
+        <span class="map-legend__swatch" style="background:rgba(167,139,250,.35);border-color:rgba(124,58,237,.75)"></span>
+        <span>Aglomerados pretos</span>
+      </div>
+      <div class="map-legend__item">
+        <span class="map-legend__swatch" style="background:rgba(74,222,128,.25);border-color:rgba(21,128,61,.8)"></span>
+        <span>Demarcação INCRA</span>
+      </div>
     `;
     L.DomEvent.disableClickPropagation(div);
     return div;
@@ -600,6 +673,11 @@ const layerControl = L.control.layers(null, overlays, { collapsed: false }).addT
 
 // Tenta carregar seus arquivos do diretório raiz do projeto (../)
 // Se você mover os GeoJSON para dentro de /web, ajuste os caminhos.
+const DEFAULT_OVERLAYS_ON = [
+  "Localidades quilombolas (pontos)",
+  "Setores quilombolas (polígonos)",
+];
+
 Promise.allSettled([
   loadGeoJson({
     label: "Localidades quilombolas (pontos)",
@@ -613,6 +691,18 @@ Promise.allSettled([
     styleFn: styleSetores,
     kind: "setores",
   }),
+  loadGeoJson({
+    label: "Aglomerados pretos",
+    url: geoJsonUrl("AglomeradosPretos.geojson"),
+    styleFn: styleAglomeradosPretos,
+    kind: "aglomerados",
+  }),
+  loadGeoJson({
+    label: "Demarcação INCRA",
+    url: geoJsonUrl("Dermacacao_Incra.geojson"),
+    styleFn: styleDemarcacaoIncra,
+    kind: "incra",
+  }),
 ]).then((results) => {
   const layers = results
     .filter((r) => r.status === "fulfilled")
@@ -623,8 +713,10 @@ Promise.allSettled([
     layerControl.addOverlay(layer, name);
   }
 
-  // Liga as camadas por padrão, se carregaram
-  layers.forEach((l) => l.addTo(map));
+  // Liga camadas principais por padrão (novas camadas ficam desligadas)
+  DEFAULT_OVERLAYS_ON.forEach((name) => {
+    if (overlays[name]) overlays[name].addTo(map);
+  });
 
   // Guarda referências e monta índice de busca para localidades
   if (overlays["Localidades quilombolas (pontos)"]) {
@@ -650,10 +742,12 @@ Promise.allSettled([
     setoresLayer = overlays["Setores quilombolas (polígonos)"];
   }
 
-  // Ajusta enquadramento
-  if (layers.length > 0) {
-    const group = L.featureGroup(layers);
-    map.fitBounds(group.getBounds().pad(0.08));
+  // Ajusta enquadramento (somente camadas ligadas por padrão)
+  const fitGroup = L.featureGroup(
+    DEFAULT_OVERLAYS_ON.filter((name) => overlays[name]).map((name) => overlays[name]),
+  );
+  if (fitGroup.getLayers().length > 0) {
+    map.fitBounds(fitGroup.getBounds().pad(0.08));
   }
 
   const failures = results.filter((r) => r.status === "rejected");
